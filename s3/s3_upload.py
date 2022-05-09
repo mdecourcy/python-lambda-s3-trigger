@@ -47,10 +47,8 @@ def get_args():
 def main():
     s3_bucket, access_key, secret_key = get_env()
     file_path, file_name = get_args()
-    print(s3_bucket)
-    print(file_path)
-    uploaded = upload_to_aws(file_path, s3_bucket, file_name, access_key, secret_key)
-    print(uploaded)
+    print("uploading {} to {}. The file will be named {}.".format(file_path, s3_bucket, file_name))
+    upload_to_aws(file_path, s3_bucket, file_name, access_key, secret_key)
 
 
 main()
