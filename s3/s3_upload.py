@@ -4,6 +4,9 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
 from pathlib import Path
+import argparse
+import sys
+
 
 def upload_to_aws(local_file, bucket, s3_file, access, secret):
     s3 = boto3.client('s3', aws_access_key_id=access,
@@ -20,14 +23,34 @@ def upload_to_aws(local_file, bucket, s3_file, access, secret):
         print("Credentials not available")
         return False
 
-def main():
+
+def get_env():
     dotenv_path = Path('../app.env')
     load_dotenv(dotenv_path=dotenv_path)
     s3_bucket = os.getenv('S3_BUCKET')
     access_key = os.getenv('ACCESS_KEY')
     secret_key = os.getenv('SECRET_KEY')
+
+    return s3_bucket, access_key, secret_key
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description='s3 upload')
+    parser.add_argument('--filepath', help="path to file to update eg ../assets/TestFiles/site1.xml")
+    parser.add_argument('--filename', help="what your file will be named in s3")
+    args = parser.parse_args(sys.argv[1:])
+    file_path = args.filepath
+    file_name = args.filename
+    return file_path, file_name
+
+
+def main():
+    s3_bucket, access_key, secret_key = get_env()
+    file_path, file_name = get_args()
     print(s3_bucket)
-    uploaded = upload_to_aws('../assets/TestFiles/site1.xml', s3_bucket, 'site1.xml', access_key, secret_key)
+    print(file_path)
+    uploaded = upload_to_aws(file_path, s3_bucket, file_name, access_key, secret_key)
     print(uploaded)
+
 
 main()
