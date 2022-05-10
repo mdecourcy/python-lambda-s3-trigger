@@ -4,12 +4,10 @@ import psycopg2
 import json
 import os
 
-import dotenv
 from dotenv import load_dotenv
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
 
 
 def connect(rds_host, rds_username, rds_user_pwd, rds_db_name):
@@ -25,8 +23,8 @@ def connect(rds_host, rds_username, rds_user_pwd, rds_db_name):
 
     return conn
 
-def handler(conn):
 
+def handler(conn):
     query = """select id, name, job_title
             from employee
             order by 1"""
@@ -37,7 +35,8 @@ def handler(conn):
         for row in cur:
             rows.append(row)
 
-    return { 'statusCode': 200, 'body': rows }
+    return {'statusCode': 200, 'body': rows}
+
 
 def get_env():
     dotenv_path = Path('../app.env')
@@ -48,6 +47,7 @@ def get_env():
     rds_db_name = os.getenv('RDS_DB_NAME')
 
     return rds_host, rds_username, rds_user_pwd, rds_db_name
+
 
 def main():
     rds_host, rds_username, rds_user_pwd, rds_db_name = get_env()
