@@ -5,9 +5,9 @@
     </site>
     <vaccines>
         <brand name="Pfizer">
-	    <total>630</total>
-            <firstShot>400</firstShot>
-            <secondtShot>230</secondtShot>
+	    <total>800</total>
+            <firstShot>500</firstShot>
+            <secondtShot>300</secondtShot>
         </brand>
         <brand name="Moderna">
 	    <total>420</total>

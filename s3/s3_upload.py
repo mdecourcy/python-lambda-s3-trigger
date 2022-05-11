@@ -13,7 +13,7 @@ def upload_to_aws(local_file, bucket, s3_file, access, secret):
                       aws_secret_access_key=secret)
 
     try:
-        s3.upload_file(local_file, bucket, s3_file)
+        s3.upload_file(local_file, bucket, s3_file, ExtraArgs={'Metadata': {'mykey': 'myvalue'}})
         print("Upload Successful")
         return True
     except FileNotFoundError:
