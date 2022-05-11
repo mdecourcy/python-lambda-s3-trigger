@@ -18,3 +18,5 @@ ALTER TABLE "data" ADD FOREIGN KEY ("site_id") REFERENCES "sites" ("id");
 
 CREATE INDEX ON "sites" ("name");
 CREATE INDEX ON "data" ("site_id");
+
+);

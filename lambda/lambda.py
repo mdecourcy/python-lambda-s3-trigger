@@ -4,27 +4,28 @@ import psycopg2
 import json
 import os
 
-from dotenv import load_dotenv
+#rds settings
+# rds settings
+rds_host  = os.environ.get('RDS_HOST')
+rds_username = os.environ.get('RDS_USERNAME')
+rds_user_pwd = os.environ.get('RDS_USER_PWD')
+rds_db_name = os.environ.get('RDS_DB_NAME')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+try:
+    conn_string = "host=%s user=%s password=%s dbname=%s" % \
+                    (rds_host, rds_username, rds_user_pwd, rds_db_name)
+    conn = psycopg2.connect(conn_string)
+except:
+    logger.error("ERROR: Could not connect to Postgres instance.")
+    sys.exit()
 
-def connect(rds_host, rds_username, rds_user_pwd, rds_db_name):
-    try:
-        conn_string = "host=%s user=%s password=%s dbname=%s" % \
-                      (rds_host, rds_username, rds_user_pwd, rds_db_name)
-        conn = psycopg2.connect(conn_string)
-    except:
-        logger.error("ERROR: Could not connect to Postgres instance.")
-        sys.exit()
+logger.info("SUCCESS: Connection to RDS Postgres instance succeeded")
 
-    logger.info("SUCCESS: Connection to RDS Postgres instance succeeded")
+def handler(event, context):
 
-    return conn
-
-
-def handler(conn):
     query = """select id, name, job_title
             from employee
             order by 1"""
@@ -35,21 +36,5 @@ def handler(conn):
         for row in cur:
             rows.append(row)
 
-    return {'statusCode': 200, 'body': rows}
+    return { 'statusCode': 200, 'body': rows }
 
-
-def get_env():
-    dotenv_path = Path('../app.env')
-    load_dotenv(dotenv_path=dotenv_path)
-    rds_host = os.getenv('RDS_HOST')
-    rds_username = os.getenv('RDS_USERNAME')
-    rds_user_pwd = os.getenv('RDS_USER_PWD')
-    rds_db_name = os.getenv('RDS_DB_NAME')
-
-    return rds_host, rds_username, rds_user_pwd, rds_db_name
-
-
-def main():
-    rds_host, rds_username, rds_user_pwd, rds_db_name = get_env()
-    conn = connect(rds_host, rds_username, rds_user_pwd, rds_db_name)
-    handler(conn)

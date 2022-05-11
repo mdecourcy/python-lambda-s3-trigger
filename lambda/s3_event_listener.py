@@ -21,6 +21,8 @@ def lambda_handler(event, context):
     try:
         response, content_type = s3_event_handler(bucket, key)
 
+
+
         if content_type is "json":
             obj = deserialize_json(response)
         elif content_type is "text/xml":

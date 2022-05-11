@@ -3,17 +3,29 @@ import os
 import boto3
 from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
+from dotenv import load_dotenv
 from pathlib import Path
 import argparse
 import sys
-
 
 def upload_to_aws(local_file, bucket, s3_file, access, secret):
     s3 = boto3.client('s3', aws_access_key_id=access,
                       aws_secret_access_key=secret)
 
+    file_name=s3_file
+    extn=file_name.split(".", 1)
+    print(extn)
+
+
     try:
-        s3.upload_file(local_file, bucket, s3_file)
+        # s3.upload_file(local_file, bucket, s3_file)
+        if "json" in extn:
+            s3.upload_file(local_file, bucket, s3_file, ExtraArgs = {'ContentType':'json'})
+        elif "xml" in extn:
+            s3.upload_file(local_file, bucket, s3_file, ExtraArgs = {'ContentType':'text/xml'})
+
+
+
         print("Upload Successful")
         return True
     except FileNotFoundError:
