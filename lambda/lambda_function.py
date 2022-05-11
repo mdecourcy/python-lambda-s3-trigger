@@ -28,9 +28,11 @@ def lambda_handler(event, context):
     key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
     try:
         response, content_type = s3_event_handler(bucket, key)
+        
         file_data = response['Body'].read().decode()
         json_string = deserialize_response(file_data, content_type)
-        objectify_json(json_string)
+
+        date, site, first_shot, second_shot = objectify_json(json_string)
 
         conn = connect(rds_host)
 
