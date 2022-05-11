@@ -5,6 +5,8 @@ import logging
 import xml.etree.ElementTree as et
 import sys
 import rds_config
+import xml_to_dict
+
 
 import psycopg2
 
@@ -12,6 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.info('loading function')
 print('Loading function')
+
 
 s3 = boto3.client('s3')
 rds_host  = "postgres-cdc.c4kfm0baalsi.us-west-2.rds.amazonaws.com"
@@ -51,7 +54,7 @@ def s3_event_handler(bucket, key):
 
 def deserialize_response(file, content_type):
     print("DEBUG DEBUG CONTENT TYPE: ", content_type)
-    if content_type is "binary/octet-stream":
+    if content_type is "json":
         print("we made it here")
         obj = json.loads(file)
     elif content_type is "text/xml":
