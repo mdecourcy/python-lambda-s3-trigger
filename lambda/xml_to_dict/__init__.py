@@ -1,1 +1,0 @@
-from .xml_to_dict import XMLtoDict

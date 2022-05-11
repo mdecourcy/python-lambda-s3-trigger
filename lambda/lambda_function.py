@@ -2,10 +2,9 @@ import json
 import urllib.parse
 import boto3
 import logging
-import xml.etree.ElementTree as et
 import sys
 import rds_config
-from xml_to_dict import XMLtoDict
+from xmltodict3 import XmlTextToDict
 
 import psycopg2
 
@@ -22,14 +21,14 @@ db_name = rds_config.db_name
 
 
 def lambda_handler(event, context):
-
     # Get the object from the event and show its content type
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
     try:
         response, content_type = s3_event_handler(bucket, key)
-        
+
         file_data = response['Body'].read().decode()
+        print("OUR INPUT IS OF TYPE ", type(file_data))
         json_string = deserialize_response(file_data, content_type)
 
         date, site, first_shot, second_shot = objectify_json(json_string)
@@ -56,18 +55,27 @@ def s3_event_handler(bucket, key):
 
 
 def deserialize_response(file, content_type):
-    print("DEBUG DEBUG CONTENT TYPE: ", content_type)
-    if content_type is "json":
-        print("we made it here")
-        obj = json.loads(file)
-    elif content_type is "text/xml":
-        parser = XMLtoDict()
-        obj = parser.parse(file)
-    else:
-        logger.error("Filetype not recognized")
-        sys.exit()
+    try:
+        print(content_type)
+        if content_type is 'json':
+            print("we made it here")
+            obj = json.loads(file)
+        elif content_type is 'text/xml':
+            print("OUR INPUT IS OF TYPE ", type(file))
+            text = file
+            result = XmlTextToDict(text, ignore_namespace=True).get_dict()
+            print(result)
+            print(json.dumps(result))
+        else:
+            logger.error("Filetype not recognized")
 
-    print(obj)
+        print("OUR CONTENT IS OF TYPE ", type(content_type))
+        obj = json.loads(file)
+
+        print(obj)
+    except Exception as e:
+        print(e)
+        raise e
 
     return obj
 
@@ -92,7 +100,7 @@ def execute_queries(date, site, first_shot, second_shot, conn):
                                                                                                  site["name"],
                                                                                                  site["zipCode"])
     print(site_query)
-    data_query = """INSERT INTO data VALUES ('{}', '{}', '{}', '{}') ON CONFLICT (siteid) DO UPDATE SET firstshot = EXCLUDED.firstshot, secondshot = EXCLUDED.secondshot""".format(
+    data_query = """INSERT INTO data VALUES ('{}', '{}', '{}', '{}') ON CONFLICT (site_id) DO UPDATE SET firstshot = EXCLUDED.firstshot, secondshot = EXCLUDED.secondshot""".format(
         site["id"], date_str, first_shot, second_shot)
     print(data_query)
 
