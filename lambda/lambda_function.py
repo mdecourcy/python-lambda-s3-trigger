@@ -65,7 +65,6 @@ def deserialize_response(file, content_type):
         else:
             logger.error("Filetype not recognized. Please upload a file that is proper XML or JSON.")
 
-        print(obj)
     except Exception as e:
         print(e)
         raise e
@@ -76,28 +75,32 @@ def deserialize_response(file, content_type):
 def objectify_json(json_string):
     js = False
     if 'date' in json_string:
-        date = json_string["date"]["year"] + json_string["date"]["month"] + json_string["date"]["day"]
+        date = str(json_string["date"]["year"]) + str(json_string["date"]["month"]) + str(json_string["date"]["day"])
         js = True
     else:
         date = json_string['data']["@year"] + json_string['data']["@month"] + json_string['data']["@day"]
-
-    # print("DATE JSON: ", date)
-    # print("VACCINES: ", json_string['data']["vaccines"]["brand"])
-    # print("SITE ", json_string['data']["site"])
 
     if js:
         site = json_string["site"]
         vaccines = json_string["vaccines"]
     else:
         site = json_string['data']['site']
-        site["id"] = str(site["@id"])
+        site["id"] = site["@id"]
         vaccines = json_string['data']["vaccines"]["brand"]
+
 
     first_shot = 0
     second_shot = 0
-    for x in vaccines:
-        first_shot += int(x["firstShot"])
-        second_shot += int(x["secondShot"])
+    if not isinstance(vaccines, list):
+        print("we made it to is instance")
+        first_shot = int(vaccines["firstShot"])
+        second_shot = int(vaccines["secondShot"])
+    else:
+        for x in vaccines:
+            print(x)
+            first_shot += int(x["firstShot"])
+            second_shot += int(x["secondShot"])
+
 
     return date, site, first_shot, second_shot
 
@@ -107,10 +110,9 @@ def execute_queries(date_str, site, first_shot, second_shot, conn):
                                                                                                  site["name"],
                                                                                                  site["zipCode"])
     print("SITE QUERY:", site_query)
-    data_query = """INSERT INTO data VALUES ('{}', '{}', '{}', '{}') ON CONFLICT DO NOTHING""".format(
+    data_query = """INSERT INTO data VALUES ('{}', '{}', '{}', '{}') ON CONFLICT (site_id, date) DO UPDATE SET firstshot = EXCLUDED.firstshot, secondshot = EXCLUDED.secondshot""".format(
         site["id"], date_str, first_shot, second_shot)
     print("DATA QUERY: ", data_query)
-
 
     with conn.cursor() as cur:
         cur.execute(site_query)
