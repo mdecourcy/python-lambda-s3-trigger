@@ -28,7 +28,7 @@ def lambda_handler(event, context):
         response, content_type = s3_event_handler(bucket, key)
 
         file_data = response['Body'].read().decode()
-        print("OUR INPUT IS OF TYPE ", type(file_data))
+
         json_string = deserialize_response(file_data, content_type)
 
         date, site, first_shot, second_shot = objectify_json(json_string)
@@ -56,21 +56,14 @@ def s3_event_handler(bucket, key):
 
 def deserialize_response(file, content_type):
     try:
-        print(content_type)
-        if content_type is 'json':
-            print("we made it here")
+        if 'json' in content_type:
             obj = json.loads(file)
-        elif content_type is 'text/xml':
-            print("OUR INPUT IS OF TYPE ", type(file))
+        if 'xml' in content_type:
             text = file
-            result = XmlTextToDict(text, ignore_namespace=True).get_dict()
-            print(result)
-            print(json.dumps(result))
+            obj = XmlTextToDict(text, ignore_namespace=True).get_dict()
+            print(json.dumps(obj))
         else:
-            logger.error("Filetype not recognized")
-
-        print("OUR CONTENT IS OF TYPE ", type(content_type))
-        obj = json.loads(file)
+            logger.error("Filetype not recognized. Please upload a file that is proper XML or JSON.")
 
         print(obj)
     except Exception as e:
@@ -81,40 +74,52 @@ def deserialize_response(file, content_type):
 
 
 def objectify_json(json_string):
-    date = json_string["date"]
-    site = json_string["site"]
-    vaccines = json_string["vaccines"]
+    js = False
+    if 'date' in json_string:
+        date = json_string["date"]["year"] + json_string["date"]["month"] + json_string["date"]["day"]
+        js = True
+    else:
+        date = json_string['data']["@year"] + json_string['data']["@month"] + json_string['data']["@day"]
+
+    # print("DATE JSON: ", date)
+    # print("VACCINES: ", json_string['data']["vaccines"]["brand"])
+    # print("SITE ", json_string['data']["site"])
+
+    if js:
+        site = json_string["site"]
+        vaccines = json_string["vaccines"]
+    else:
+        site = json_string['data']['site']
+        site["id"] = str(site["@id"])
+        vaccines = json_string['data']["vaccines"]["brand"]
 
     first_shot = 0
     second_shot = 0
     for x in vaccines:
-        first_shot += x["firstShot"]
-        second_shot += x["secondShot"]
+        first_shot += int(x["firstShot"])
+        second_shot += int(x["secondShot"])
 
     return date, site, first_shot, second_shot
 
 
-def execute_queries(date, site, first_shot, second_shot, conn):
-    date_str = str(date["year"]) + str(date["month"]) + str(date["day"])
+def execute_queries(date_str, site, first_shot, second_shot, conn):
     site_query = """INSERT INTO sites VALUES ('{}', '{}', '{}') ON CONFLICT DO NOTHING""".format(site["id"],
                                                                                                  site["name"],
                                                                                                  site["zipCode"])
-    print(site_query)
-    data_query = """INSERT INTO data VALUES ('{}', '{}', '{}', '{}') ON CONFLICT (site_id) DO UPDATE SET firstshot = EXCLUDED.firstshot, secondshot = EXCLUDED.secondshot""".format(
+    print("SITE QUERY:", site_query)
+    data_query = """INSERT INTO data VALUES ('{}', '{}', '{}', '{}') ON CONFLICT DO NOTHING""".format(
         site["id"], date_str, first_shot, second_shot)
-    print(data_query)
+    print("DATA QUERY: ", data_query)
+
 
     with conn.cursor() as cur:
         cur.execute(site_query)
         cur.execute(data_query)
-        for i in cur.fetchall():
-            print(i)
         conn.commit()
 
 
 def connect(rds_host):
     try:
-        print("we're in connect")
         conn = psycopg2.connect(host=rds_host, user=name, password=password, database=db_name)
 
         conn.autocommit = True
